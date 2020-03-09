@@ -303,9 +303,11 @@ namespace N2N_Desktop
             TextBlock text = new TextBlock();
             item.Height = 25;
             item.Name = "UUID" + config.UUID;
+            RegisterName("UUID" + config.UUID, item);
             wrap.Margin = new Thickness(10, 0, 10, 0);
             wrap.VerticalAlignment = VerticalAlignment.Center;
             check.Name = "CHECK" + config.UUID;
+            RegisterName("CHECK" + config.UUID, check);
             check.Background = Brushes.Transparent;
             check.GroupName = "Used";
             check.Checked += ChangeUsed;
@@ -317,9 +319,19 @@ namespace N2N_Desktop
             text.Foreground = Brush;
             text.VerticalAlignment = VerticalAlignment.Center;
 
-            if(config.isUsed)
+            //托盘菜单项
+            MenuItem menu = new MenuItem();
+            menu.Header = config.Name;
+            menu.Height = 25;
+            menu.MinWidth = 150;
+            menu.Name = "MENU" + config.UUID;
+            RegisterName("MENU" + config.UUID, menu);
+            menu.Click += TaskBarChangeList;
+
+            if (config.isUsed)
             {
                 item.IsSelected = true;
+                menu.IsChecked = true;
                 check.IsChecked = true;
                 nowUsed = config;
                 nName.Text = config.Name;
@@ -335,6 +347,84 @@ namespace N2N_Desktop
             wrap.Children.Add(text);
             item.Content = wrap;
             ConfigList.Items.Add(item);
+            TaskBarConfigList.Items.Add(menu);
+        }
+
+        bool isTaskChange = false;
+        bool isListChange = false;
+
+        private void TaskBarChangeList(object sender, RoutedEventArgs e)
+        {
+            MenuItem menu = (MenuItem)sender;
+            //try
+            {
+                if(isListChange)
+                {
+                    isTaskChange = false;
+                    isListChange = false;
+                    return;
+                }
+                menu.IsChecked = true;
+                for(int i=0; i<= TaskBarConfigList.Items.Count - 1; i++)
+                {
+                    MenuItem menuItem = (MenuItem)TaskBarConfigList.Items[i];
+                    if (menuItem.Name == "MENU" + nowUsed.UUID)
+                    {
+                        menuItem.IsChecked = false;
+                        break;
+                    }
+                }
+
+                ListViewItem list = (ListViewItem)New.FindName("UUID" + menu.Name.Substring(4));
+                RadioButton radio = (RadioButton)list.FindName("CHECK" + menu.Name.Substring(4));
+                isTaskChange = true;
+                radio.IsChecked = true;
+                list = (ListViewItem)New.FindName("UUID" + nowUsed.UUID);
+                radio = (RadioButton)list.FindName("CHECK" + nowUsed.UUID);
+                isTaskChange = true;
+                radio.IsChecked = false;
+            }
+            //catch { }
+            for (int i = 0; i <= configs.Count - 1; i++)
+            {
+                if (configs[i].isUsed == true)
+                {
+                    if (configs[i].UUID == menu.Name.Substring(4))
+                    {
+                        return;
+                    }
+                    configs[i].isUsed = false;
+                    break;
+                }
+            }
+            for (int i = 0; i <= configs.Count - 1; i++)
+            {
+                if (configs[i].UUID == menu.Name.Substring(4))
+                {
+                    configs[i].isUsed = true;
+                    nName.Text = configs[i].Name;
+                    nIP.Text = configs[i].iP;
+                    nAdd.Text = configs[i].iPAdditional;
+                    nSever.Text = configs[i].severIP + ":" + configs[i].severPost;
+                    nTeamName.Text = configs[i].teamName;
+                    nPassword.Text = configs[i].teamPassword;
+                    nowUsed = configs[i];
+                    break;
+                }
+            }
+            File.Delete("Save\\Config.ssn2n");
+            for (int i = 0; i <= configs.Count - 1; i++)
+            {
+                SaveLoader.AddSave(configs[i]);
+            }
+            isTaskChange = false;
+            if (isRun)
+            {
+                SSUserClass.Proc.KillProc(SSUserClass.Proc.GetProc("edge"));
+                isOpen.Text = "正在启动";
+                ProgressBarHelper.SetAnimateTo(openPer, 50);
+                RunFun();
+            }
         }
 
         /// <summary>
@@ -345,6 +435,44 @@ namespace N2N_Desktop
         private void ChangeUsed(object sender, RoutedEventArgs e)
         {
             RadioButton button = (RadioButton)sender;
+            if (nowUsed != null)
+            {
+                //try
+                {
+                    if (isTaskChange)
+                    {
+                        isTaskChange = false;
+                        isListChange = false;
+                        return;
+                    }
+                    button.IsChecked = true;
+                    ListViewItem list = (ListViewItem)New.FindName("UUID" + nowUsed.UUID);
+                    RadioButton radio = (RadioButton)list.FindName("CHECK" + nowUsed.UUID);
+                    radio.IsChecked = false;
+
+                    for (int i = 0; i <= TaskBarConfigList.Items.Count - 1; i++)
+                    {
+                        MenuItem menuItem = (MenuItem)TaskBarConfigList.Items[i];
+                        if (menuItem.Name == "MENU" + button.Name.Substring(5))
+                        {
+                            isListChange = true;
+                            menuItem.IsChecked = true;
+                            break;
+                        }
+                    }
+                    for (int i = 0; i <= TaskBarConfigList.Items.Count - 1; i++)
+                    {
+                        MenuItem menuItem = (MenuItem)TaskBarConfigList.Items[i];
+                        if (menuItem.Name == "MENU" + nowUsed.UUID)
+                        {
+                            isListChange = true;
+                            menuItem.IsChecked = false;
+                            break;
+                        }
+                    }
+                }
+                //catch { }
+            }
             for (int i = 0; i <= configs.Count - 1; i++)
             {
                 if (configs[i].isUsed == true)
@@ -362,13 +490,13 @@ namespace N2N_Desktop
                 if(configs[i].UUID == button.Name.Substring(5))
                 {
                     configs[i].isUsed = true;
-                    nowUsed = configs[i];
                     nName.Text = configs[i].Name;
-                    nIP.Text = configs[i].iP + " -" + configs[i].iPAdditional;
+                    nIP.Text = configs[i].iP;
                     nAdd.Text = configs[i].iPAdditional;
                     nSever.Text = configs[i].severIP + ":" + configs[i].severPost;
                     nTeamName.Text = configs[i].teamName;
                     nPassword.Text = configs[i].teamPassword;
+                    nowUsed = configs[i];
                     break;
                 }
             }
@@ -376,6 +504,14 @@ namespace N2N_Desktop
             for (int i = 0; i <= configs.Count - 1; i++)
             {
                 SaveLoader.AddSave(configs[i]);
+            }
+            isListChange = false;
+            if (isRun)
+            {
+                SSUserClass.Proc.KillProc(SSUserClass.Proc.GetProc("edge"));
+                isOpen.Text = "正在启动";
+                ProgressBarHelper.SetAnimateTo(openPer, 50);
+                RunFun();
             }
         }
 
@@ -504,37 +640,48 @@ namespace N2N_Desktop
                     break;
                 case 5:
                     {
-                        //基本数据
-                        string IPADRESS = nowUsed.isDHCP ? "dhcp:" + nowUsed.iP : nowUsed.iP;       //自定义本机IP,DHCP请在DHCP服务器IP前加："dhcp:"
-                        string DHCP = nowUsed.isDHCP ? "-r" : "";                                  //如果为DHCP请将此项改为："-r",不是DHCP请留空：""。
-                        string GROUPNAME = nowUsed.teamName;                                    //填写组名
-                        string PASSWORD = nowUsed.teamPassword;                                 //填写密码
-                        string SUPERNODEIP = nowUsed.severIP;                                   //此项为SuperNode服务器IP(公网)
-                        string SUPERNODEPORT = nowUsed.severPost.ToString();                    //此项为SuperNode服务器端口
-                        string OTHERARG = nowUsed.iPAdditional;                                 //其他参数
-                                                                                                //准备配置文件
-                        string edgearg = DHCP + " -a " + IPADRESS + " -c " + GROUPNAME + " -k " + PASSWORD + " -l " + SUPERNODEIP + ":" + SUPERNODEPORT + OTHERARG;
-                        ProcessStartInfo psi = new ProcessStartInfo();
-                        psi.FileName = "System\\edge.exe";
-                        psi.Verb = "runas";
-                        psi.Arguments = edgearg;
-                        try
-                        {
-                            Process.Start(psi);
-                            //监控进程
-                            RunInfo.Visibility = Visibility.Visible;
-                            Thread thread = new Thread(Seeing);
-                            thread.Start();
-                            isOpen.Text = "正在启动线程维护";
-                            ProgressBarHelper.SetAnimateTo(openPer, 99);
-                        }
-                        catch
-                        {
-                            ProgressBarHelper.SetAnimateTo(openPer, 0);
-                            isOpen.Text = "未启用";
-                        }
+                        RunFun();
                     }
                     break;
+            }
+        }
+
+        private void RunFun()
+        {
+            //基本数据
+            string IPADRESS = nowUsed.isDHCP ? "dhcp:" + nowUsed.iP : nowUsed.iP;       //自定义本机IP,DHCP请在DHCP服务器IP前加："dhcp:"
+            string DHCP = nowUsed.isDHCP ? "-r" : "";                                  //如果为DHCP请将此项改为："-r",不是DHCP请留空：""。
+            string GROUPNAME = nowUsed.teamName;                                    //填写组名
+            string PASSWORD = nowUsed.teamPassword;                                 //填写密码
+            string SUPERNODEIP = nowUsed.severIP;                                   //此项为SuperNode服务器IP(公网)
+            string SUPERNODEPORT = nowUsed.severPost.ToString();                    //此项为SuperNode服务器端口
+            string OTHERARG = nowUsed.iPAdditional;                                 //其他参数
+                                                                                    //准备配置文件
+            string edgearg = DHCP + " -a " + IPADRESS + " -c " + GROUPNAME + " -k " + PASSWORD + " -l " + SUPERNODEIP + ":" + SUPERNODEPORT + OTHERARG;
+            ProcessStartInfo psi = new ProcessStartInfo();
+            psi.FileName = "System\\edge.exe";
+            psi.Verb = "runas";
+            psi.Arguments = edgearg;
+            try
+            {
+                Process.Start(psi);
+                //监控进程
+                this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
+                {
+                    RunInfo.Visibility = Visibility.Visible;
+                    isOpen.Text = "正在启动线程维护";
+                    ProgressBarHelper.SetAnimateTo(openPer, 99);
+                });
+                Thread thread = new Thread(Seeing);
+                thread.Start();
+            }
+            catch
+            {
+                this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
+                {
+                    ProgressBarHelper.SetAnimateTo(openPer, 0);
+                    isOpen.Text = "未启用";
+                });
             }
         }
 
@@ -558,6 +705,8 @@ namespace N2N_Desktop
                 UsePorc.Text = pf1.NextValue() / 1024 + "KB";
                 ProgressBarHelper.SetAnimateTo(openPer, 100);
                 isOpen.Text = "启动完成";
+                TaskBar.ToolTipText = "N2N Desktop Launcher - 正在运行";
+                taskBarRun.IsChecked = true;
             });
             while (SSUserClass.Proc.HasProc("edge"))
             {
@@ -578,8 +727,10 @@ namespace N2N_Desktop
                 RunInfo.Visibility = Visibility.Collapsed;
                 ProgressBarHelper.SetAnimateTo(openPer, 0);
                 isOpen.Text = "未启用";
+                TaskBar.ToolTipText = "N2N Desktop Launcher -未启用";
                 ButtonHelper.SetIcon(Run, "");
                 IconHelper.SetFontSize(Run, 25);
+                taskBarRun.IsChecked = false;
             });
             isRun = false;
         }
@@ -691,6 +842,31 @@ namespace N2N_Desktop
         private void SS_Click(object sender, RoutedEventArgs e)
         {
             Process.Start("http://ssteamcommunity.wordpress.com/");
+        }
+
+        private void TaskBarRun_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isRun)
+            {
+                isOpen.Text = "正在启动";
+                ProgressBarHelper.SetAnimateTo(openPer, 50);
+                RunFun();
+            }
+            else
+            {
+                SSUserClass.Proc.KillProc(SSUserClass.Proc.GetProc("edge"));
+            }
+        }
+
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
+
+        private void GoSet_Click(object sender, RoutedEventArgs e)
+        {
+            b.IsSelected = true;
+            WindowState = WindowState.Normal;
         }
     }
 }

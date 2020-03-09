@@ -2,9 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media;
 
 namespace N2N_Desktop
 {
@@ -13,7 +12,7 @@ namespace N2N_Desktop
     /// </summary>
     public class SSUserClass
     {
-        #region Reg类 | 注册表操作
+        #region Reg | 注册表操作
         public class Reg
         {
             /// <summary>
@@ -124,7 +123,7 @@ namespace N2N_Desktop
             }
         }
         #endregion
-
+        
         #region Proc | 进程操作
         public class Proc
         {
@@ -192,6 +191,31 @@ namespace N2N_Desktop
                     }
                 }
                 return false;
+            }
+        }
+        #endregion
+
+        #region Other | 杂项
+        public class Other
+        {
+            /// <summary>
+            /// 计算字符串在特定字体大小，字体下实际占用的长度。
+            /// </summary>
+            /// <param name="text">字符串</param>
+            /// <param name="fontSize">字体大小</param>
+            /// <param name="fontFamily">字体</param>
+            /// <returns></returns>
+            public static double MeasureTextWidth(string text, double fontSize, string fontFamily)
+            {
+                FormattedText formattedText = new FormattedText(
+                text,
+                System.Globalization.CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(fontFamily.ToString()),
+                fontSize,
+                Brushes.Black
+                );
+                return formattedText.WidthIncludingTrailingWhitespace;
             }
         }
         #endregion
