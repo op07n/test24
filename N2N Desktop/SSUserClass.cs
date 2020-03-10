@@ -2,8 +2,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace N2N_Desktop
 {
@@ -72,7 +78,7 @@ namespace N2N_Desktop
                 foreach (string keyName in subkeyNames)
                 {
                     if (keyName.Equals(name)) //判断键值的名称
-                {
+                    {
                         hkml.Close();
                         return true;
                     }
@@ -109,7 +115,7 @@ namespace N2N_Desktop
             /// <param name="way">键的父路径</param>
             /// <param name="name">键名</param>
             /// <returns></returns>
-            public static String GetRegKey(RegistryKey key, String way,String name)
+            public static String GetRegKey(RegistryKey key, String way, String name)
             {
                 try
                 {
@@ -123,7 +129,7 @@ namespace N2N_Desktop
             }
         }
         #endregion
-        
+
         #region Proc | 进程操作
         public class Proc
         {
@@ -172,7 +178,11 @@ namespace N2N_Desktop
             /// <param name="p">进程</param>
             public static void KillProc(Process p)
             {
-                p.Kill();
+                try
+                {
+                    p.Kill();
+                }
+                catch { }
             }
 
             /// <summary>
@@ -191,6 +201,144 @@ namespace N2N_Desktop
                     }
                 }
                 return false;
+            }
+        }
+        #endregion
+
+        #region Net | 网络类
+        public class Net
+        {
+            /// <summary>
+            /// Ping IP （详细用法参见方法内注明）
+            /// </summary>
+            /// <param name="ipStr">IP地址</param>
+            /// <param name="data">Ping数据</param>
+            /// <returns></returns>
+            public static PingReply GetPing(string ipStr, string data)
+            {
+                //构造Ping实例
+                Ping pingSender = new Ping();
+                //Ping 选项设置
+                PingOptions options = new PingOptions();
+                options.DontFragment = true;
+                //测试数据
+                byte[] buffer = Encoding.ASCII.GetBytes(data);
+                //设置超时时间
+                int timeout = 120;
+                //调用同步 send 方法发送数据,将返回结果保存至PingReply实例
+                try
+                {
+                    PingReply reply = pingSender.Send(ipStr, timeout, buffer, options);
+                    return reply;
+                }
+                catch
+                {
+                    //构造Ping实例
+                    pingSender = new Ping();
+                    //Ping 选项设置
+                    options = new PingOptions();
+                    options.DontFragment = true;
+                    //测试数据
+                    buffer = Encoding.ASCII.GetBytes(data);
+                    //设置超时时间
+                    timeout = 120;
+                    //调用同步 send 方法发送数据,将返回结果保存至PingReply实例
+                    PingReply reply = pingSender.Send("localhost", timeout, buffer, options);
+                    return reply;
+                }
+                /*
+                reply.Status == IPStatus.Success
+                答复的主机地址：                  reply.Address.ToString()
+                往返时间：                       reply.RoundtripTime
+                生存时间( TTL ):                 reply.Options.Ttl
+                是否控制数据包的分段：             reply.Options.DontFragment
+                缓冲区大小:                      reply.Buffer.Length
+                */
+            }
+        }
+        #endregion
+
+        #region Win | 窗口操作
+        public class Win
+        {
+            public static class win32
+            {
+                [DllImport("user32.dll")]
+                public static extern long GetWindowLong(IntPtr hWnd, int nlndex);
+                [DllImport("user32.dll")]
+                public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+                [DllImport("user32.dll")]
+                public static extern long SetWindowLong(IntPtr hWnd, int nlndex, long dwNewLong);
+                [DllImport("user32.dll")]
+                public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+            }
+            /// <summary>
+            /// 通过窗口名或类名寻找窗口
+            /// </summary>
+            /// <param name="lpClassName">窗口名</param>
+            /// <param name="lpWindowName">类名</param>
+            public static IntPtr FindWindow(string lpClassName, string lpWindowName)
+            {
+                return win32.FindWindow(lpClassName, lpWindowName);
+            }
+            /// <summary>
+            /// 操作对应句柄的窗口任务栏图标(暂时只支持隐藏，另一个要用再写 = =)
+            /// </summary>
+            /// <param name="hWnd">句柄</param>
+            /// <param name="isHide">是否隐藏</param>
+            public static void SetTaskbarIcon(IntPtr hWnd, bool isHide)
+            {
+                if (isHide)
+                {
+                    long style = win32.GetWindowLong(hWnd, -16);
+                    style &= ~(0x10000000L);
+                    style |= 0x00000080L;
+                    style &= ~(0x00040000L);
+                    win32.ShowWindow(hWnd, 0);
+                    win32.SetWindowLong(hWnd, -16, style);
+                    win32.ShowWindow(hWnd, 5);
+                    win32.ShowWindow(hWnd, 0);
+                }
+            }
+        }
+        #endregion
+
+        #region Anim | UI 动画
+        public class Anim
+        {
+            /// <summary>
+            /// 将滚动条平滑滚动到指定位置（注意：这是个动画循环，请新建线程使用）
+            /// </summary>
+            /// <param name="scroll">ScrollViewer</param>
+            /// <param name="to">位置</param>
+            /// <param name="window">UI线程对应的窗口</param>
+            /// <param name="speed">速度</param>
+            /// <param name="where">方向</param>
+            public static void ScrollRollTo(MainWindow window, ScrollViewer scroll, int to, int speed, bool where)
+            {
+                if (where)
+                {
+                    for (int i = Convert.ToInt32(scroll.VerticalOffset); i <= to; i = i + 2)
+                    {
+                        window.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
+                        {
+                            scroll.ScrollToVerticalOffset(i);
+                        });
+                        Thread.Sleep(speed);
+                    }
+                }
+                else
+                {
+                    for (int i = to; i >= Convert.ToInt32(scroll.VerticalOffset); i = i - 2)
+                    {
+                        window.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
+                        {
+                            scroll.ScrollToVerticalOffset(i);
+                        });
+                        Thread.Sleep(speed);
+                    }
+
+                }
             }
         }
         #endregion

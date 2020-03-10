@@ -15,14 +15,17 @@
             Foreground="#000000"
             Background="#00000000"
             SizeChanged="Onsizechanged"
+            StateChanged="WindowX_StateChanged"
             pu:WindowXCaption.Background="#FF191F22"
             pu:WindowXCaption.Foreground="#FFBDE6FB"
+            Closing="WindowX_Closing"
             WindowStyle="None">
     <!--
             Height="423.018"
             Width="673.028"
             -->
     <Window.Resources>
+        <local:ShowMessageCommand x:Key="MessageCommand" />
         <Style x:Key="TaskbarCheckStyle" TargetType="{x:Type CheckBox}">
             <Setter Property="pu:CheckBoxHelper.CheckBoxStyle" Value="Standard"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -82,10 +85,6 @@
                         <StackPanel Margin="30,10,30,0" >
                             <TextBlock x:Name="isOpen" Text="未启用" Foreground="#FFBDE6FB" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                             <StackPanel Visibility="Collapsed" x:Name="RunInfo" Margin="0,30,0,0" HorizontalAlignment="Center">
-                                <WrapPanel Margin="0,5,0,0" >
-                                    <TextBlock Text="目前状态：" Foreground="#FFBDE6FB" TextWrapping="Wrap" VerticalAlignment="Center" Width="82"/>
-                                    <TextBlock x:Name="NowPorc" Text="无" Foreground="#FFBDE6FB" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                                </WrapPanel>
                                 <WrapPanel Margin="0,5,0,0">
                                     <TextBlock Text="进程名称：" Foreground="#FFBDE6FB" TextWrapping="Wrap" VerticalAlignment="Center" Width="82"/>
                                     <TextBlock x:Name="NamePorc" Text="无" Foreground="#FFBDE6FB" TextWrapping="Wrap" VerticalAlignment="Center"/>
@@ -97,6 +96,10 @@
                                 <WrapPanel Margin="0,5,0,0">
                                     <TextBlock Text="内存占用：" Foreground="#FFBDE6FB" TextWrapping="Wrap" VerticalAlignment="Center" Width="82"/>
                                     <TextBlock x:Name="UsePorc" Text="无" Foreground="#FFBDE6FB" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                </WrapPanel>
+                                <WrapPanel Margin="0,5,0,0">
+                                    <TextBlock Text="连接延迟：" Foreground="#FFBDE6FB" TextWrapping="Wrap" VerticalAlignment="Center" Width="82"/>
+                                    <TextBlock x:Name="Ping" Text="无" Foreground="#FFBDE6FB" TextWrapping="Wrap" VerticalAlignment="Center"/>
                                 </WrapPanel>
                             </StackPanel>
                         </StackPanel>
@@ -240,45 +243,129 @@
             <TabItem Header="系统设置" x:Name="c">
             </TabItem>
             <TabItem Header="关于作者" x:Name="d">
-                <ScrollViewer pu:ScrollViewerHelper.ScrollBarCornerRadius="2" pu:ScrollViewerHelper.ScrollBarThickness="6">
+                <ScrollViewer x:Name="AboutRoll" pu:ScrollViewerHelper.ScrollBarCornerRadius="2" pu:ScrollViewerHelper.ScrollBarThickness="6">
                     <StackPanel Width="660" HorizontalAlignment="Center">
-                        <Image Source="icon.png" Height="134" Margin="0,20,0,0"/>
+                        <TextBlock Text="v.1.0.0" FontSize="10" Foreground="#FF6B838E" TextWrapping="Wrap" Margin="0,12,12,0" Height="14" VerticalAlignment="Top" HorizontalAlignment="Right" Width="46" TextAlignment="Right"/>
+                        <Image Source="icon.png" Height="134" Margin="0"/>
                         <TextBlock Text="N2N Desktop Launcher" FontSize="30" Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="0"/>
-                        <TextBlock Text="N2N是一款轻型VPN软件，可轻松创建绕过中间防火墙的虚拟网络。"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="50,30,50,0" TextWrapping="Wrap"/>
+                        <TextBlock Text="N2N是一款轻型VPN软件，可轻松创建绕过中间防火墙的虚拟网络。"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="50,15,50,0" TextWrapping="Wrap"/>
                         <TextBlock Text="多个边缘节点之间共享的虚拟网络称为社区。 单个超级节点可以中继多个社区，而单个PC可以同时成为多个社区的一部分。 边缘节点可以使用加密密钥对社区中的数据包进行加密。"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="50,0" TextWrapping="Wrap"/>
-                        <TextBlock Text="(继续往下看啦)"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="134,30,134,0" TextWrapping="Wrap" Height="93"/>
-                        <TextBlock Text="本软件是一个用于快速配置、启用和管理N2N服务的GUI程序。"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="134,20,134,0" TextWrapping="Wrap"/>
-                        <Grid Height="158">
-                            <Image Source="SS.png" Margin="51,24,499,24" Width="90" Height="90" VerticalAlignment="Center"/>
-                            <TextBlock Text="作者 - Stapx Steve" FontSize="25" Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="199,22,79,99" Width="382"/>
-                            <TextBlock Text="Stapx Steve,这是一只喜欢做UI排版的SS，喜欢折腾（逃）。有事没事就想做点什么（然而大半都做不完），米粉、谷歌粉，会卖萌（大雾）&#xA;（这是一段用烂了的介绍呢——我真的懒得排这个界面了，凑活看吧"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="195,61,36,1" TextWrapping="Wrap" Width="429"/>
-                        </Grid>
-                        <Grid Height="158">
-                            <Image Source="ck.png" Margin="0,0,61,0" Width="90" Height="90" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                            <TextBlock Text="图标 - Kagurazaka Mikoto" FontSize="25" Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="118,22,216,99" Width="326" TextAlignment="Right"/>
-                            <TextBlock Text="C/Python/JavaScript Coder / 不会女装 / 不是coser / 社交不能 / 我太弱了&#13;Github - https://github.com/M1k0t0&#13;Blog - https://purr.me0w.best"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="48,61,196,1" TextWrapping="Wrap" Width="416" TextAlignment="Right"/>
-                        </Grid>
-                        <Grid Height="158" Visibility="Collapsed">
-                            <Image Source="SS.png" Margin="51,24,499,24" Width="90" Height="90" VerticalAlignment="Center"/>
-                            <TextBlock Text="协助 - " FontSize="25" Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="199,22,408,99" Width="53"/>
-                            <TextBlock Text="Stapx Steve,这是一只喜欢做UI排版的SS，喜欢折腾（逃）。有事没事就想做点什么（然而大半都做不完），米粉、谷歌粉，会卖萌（大雾）&#xA;（这是一段用烂了的介绍呢——我真的懒得排这个界面了，凑活看吧"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="195,61,36,1" TextWrapping="Wrap" Width="429"/>
-                        </Grid>
-                        <WrapPanel Margin="0,50,0,60" HorizontalAlignment="Center" >
-                            <Button x:Name="N2N" Click="N2N_Click" Content="N2N 项目" Width="150" Height="50" Margin="0,0,50,0" pu:ButtonHelper.CornerRadius="4" Foreground="#FFBDE6FB" pu:ButtonHelper.ButtonStyle="Outline"/>
-                            <Button x:Name="SS" Click="SS_Click" Content="Stapx Steve" Width="150" Height="50" pu:ButtonHelper.CornerRadius="4" Foreground="#FFBDE6FB" pu:ButtonHelper.ButtonStyle="Outline"/>
+                        <Button x:Name="about" Click="About_Click" pu:ButtonHelper.ButtonStyle="Link" pu:IconHelper.FontSize="30" pu:ButtonHelper.Icon="" pu:ButtonHelper.HoverBrush="#FFBDE6FB" Foreground="#FF6B838E" Margin="0,35,0,0"/>
+                        <StackPanel Background="#FF0F1213">
+                            <Grid>
+                                <Grid Height="1" Background="#FF191F22" Margin="0,8,0,0">
+                                    <Grid.Effect>
+                                        <DropShadowEffect ShadowDepth="-4" BlurRadius="10" Color="#FF171717"/>
+                                    </Grid.Effect>
+                                </Grid>
+                                <Grid Height="9" Background="#FF191F22" Margin="0,-1,0,0"/>
+                            </Grid>
+                            <Grid Height="158">
+                                <Image Source="SS.png" Margin="50,34,520,34" Width="90" Height="90" VerticalAlignment="Center"/>
+                                <TextBlock Text="作者 - Stapx Steve" FontSize="25" Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="188,22,90,99" Width="382"/>
+                                <TextBlock Text="[这是作者——] 这是一只喜欢做UI排版的SS，喜欢折腾（逃）。有事没事就想做点什么（然而大半都做不完），米粉、谷歌粉，会卖萌（大雾）&#xA;（这是一段用烂了的介绍呢——我真的懒得排这个界面了，凑活看吧"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="184,61,47,1" TextWrapping="Wrap" Width="429"/>
+                            </Grid>
+                            <Grid Height="158">
+                                <Image Source="ck.png" Margin="0,0,61,0" Width="90" Height="90" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Text="图标 - Kagurazaka Mikoto" FontSize="25" Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="125,22,209,99" Width="326" TextAlignment="Right"/>
+                                <TextBlock Text="C | Python | JavaScript Coder [这是画图标的——]&#13; 不会女装 | 不是coser | 社交不能 | 我太弱了&#xA;Github - https://github.com/M1k0t0&#xA;Blog - https://purr.me0w.best"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="48,61,196,1" TextWrapping="Wrap" Width="416" TextAlignment="Right"/>
+                            </Grid>
+                            <Grid Height="158">
+                                <Image Source="tp.jpg" Margin="51,24,499,24" Width="90" Height="90" VerticalAlignment="Center"/>
+                                <TextBlock Text="协助 - Tim Paik" FontSize="25" Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="207,22,27,99" Width="426"/>
+                                <TextBlock Text="[这人提供了最初的思路——]"  Foreground="#FFBDE6FB" HorizontalAlignment="Center" Margin="195,61,36,1" TextWrapping="Wrap" Width="429"/>
+                            </Grid>
+                            <Grid>
+                                <Grid Height="1" Background="#FF191F22" Margin="0,8,0,0" VerticalAlignment="Bottom">
+                                    <Grid.Effect>
+                                        <DropShadowEffect ShadowDepth="-4" BlurRadius="10" Color="#FF171717"/>
+                                    </Grid.Effect>
+                                </Grid>
+                                <Grid Height="32" Background="#FF191F22" Margin="0,0,0,-24" VerticalAlignment="Bottom"/>
+                            </Grid>
+                        </StackPanel>
+                        <TextBlock Text="其他" FontSize="25" Foreground="#FFBDE6FB" HorizontalAlignment="Left" Margin="64,18,0,10" Width="382"/>
+                        <WrapPanel Margin="83,0,0,10" HorizontalAlignment="Left">
+                            <TextBlock Text="N2N Github 项目存储库地址"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Width="383"/>
+                            <Button x:Name="N2N" Click="N2N_Click" Content="N2N Github" Width="100" Height="30" pu:ButtonHelper.CornerRadius="4" Foreground="#FFBDE6FB" pu:ButtonHelper.ButtonStyle="Outline"/>
                         </WrapPanel>
+                        <WrapPanel Margin="83,0,0,10" HorizontalAlignment="Left">
+                            <TextBlock Text="Stapx Steve 的博客"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Width="383"/>
+                            <Button x:Name="SS" Click="SS_Click" Content="Stapx Steve" Width="100" Height="30" pu:ButtonHelper.CornerRadius="4" Foreground="#FFBDE6FB" pu:ButtonHelper.ButtonStyle="Outline"/>
+                        </WrapPanel>
+                        <WrapPanel Margin="83,0,-2,15" HorizontalAlignment="Left">
+                            <TextBlock Text="Kagurazaka Mikoto 的博客"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Width="383"/>
+                            <Button x:Name="ck" Click="Ck_Click"  Content="Stapx Steve" Width="100" Height="30" pu:ButtonHelper.CornerRadius="4" Foreground="#FFBDE6FB" pu:ButtonHelper.ButtonStyle="Outline"/>
+                        </WrapPanel>
+                        <StackPanel Background="#FF0F1213">
+                            <Grid>
+                                <Grid Height="1" Background="#FF191F22" Margin="0,8,0,0">
+                                    <Grid.Effect>
+                                        <DropShadowEffect ShadowDepth="-4" BlurRadius="10" Color="#FF171717"/>
+                                    </Grid.Effect>
+                                </Grid>
+                                <Grid Height="9" Background="#FF191F22" Margin="0,-1,0,0"/>
+                            </Grid>
+                            <TextBlock Text="没人会看的更新日志" FontSize="25" Foreground="#FFBDE6FB" HorizontalAlignment="Right" Margin="0,18,64,10" Width="382" TextAlignment="Right"/>
+                            <StackPanel Margin="83,0" >
+                                <TextBlock Text="2020-03-06"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Width="383"/>
+                                <TextBlock Text="+ 项目开始"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="+ 基本界面"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="2020-03-07"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Width="383"/>
+                                <TextBlock Text="= 完善界面"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="+ 配置管理"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="= BUG：控件交互不同步"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="= BUG：修改配置报错错误"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="= BUG：按钮交互错误"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="2020-03-08"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Width="383"/>
+                                <TextBlock Text="+ N2N基础启动功能"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="2020-03-09"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Width="383"/>
+                                <TextBlock Text="+ 托盘全部功能"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="2020-03-10"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Width="383"/>
+                                <TextBlock Text="+ 隐藏控制台窗口"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="+ 控制台LOG监控"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="+ LOG实时监控"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="+ LOG实时写出"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="+ 崩溃报错"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="= 在运行状态时流畅切换配置"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="+ 崩溃自动重启"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+                                <TextBlock Text="= 重新排版关于界面"  Foreground="#FFBDE6FB" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="27,0,0,0" Width="383"/>
+
+                            </StackPanel>
+                            <Grid>
+                                <Grid Height="1" Background="#FF191F22" Margin="0,8,0,0" VerticalAlignment="Bottom">
+                                    <Grid.Effect>
+                                        <DropShadowEffect ShadowDepth="-4" BlurRadius="10" Color="#FF171717"/>
+                                    </Grid.Effect>
+                                </Grid>
+                                <Grid Height="32" Background="#FF191F22" Margin="0,0,0,-24" VerticalAlignment="Bottom"/>
+                            </Grid>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
         </TabControl>
 
         <Grid Background="#FF191F22" VerticalAlignment="Top" Margin="0,29,0,0" Height="1" />
-        <Button x:Name="Run" Click="Run_Click" pu:ButtonHelper.Icon="" pu:IconHelper.FontSize="25" pu:ButtonHelper.HoverBrush="#FFBDE6FB" pu:ButtonHelper.CornerRadius="40" Background="#FFBDE6FB" Margin="0,0,35,35" Foreground="#FF191F22" Height="40" Width="40" VerticalAlignment="Bottom" HorizontalAlignment="Right">
+        <Button x:Name="Run" Click="Run_Click" pu:ButtonHelper.WaitingContent="" MouseRightButtonDown="Run_MouseRightButtonDown" pu:ButtonHelper.Icon="" pu:IconHelper.FontSize="25" pu:ButtonHelper.HoverBrush="#FFBDE6FB" pu:ButtonHelper.CornerRadius="40" Background="#FFBDE6FB" Margin="0,0,35,35" Foreground="#FF191F22" Height="40" Width="40" VerticalAlignment="Bottom" HorizontalAlignment="Right">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="-4" BlurRadius="10" Color="#FFBDE6FB"/>
             </Button.Effect>
         </Button>
-        <TextBlock Text="v.0.2.10" FontSize="10" Foreground="#FF6B838E" TextWrapping="Wrap" Margin="0,12,6,0" Height="14" VerticalAlignment="Top" HorizontalAlignment="Right" Width="46" TextAlignment="Right"/>
+
+        <Grid Visibility="Collapsed" x:Name="panLogUI" Background="#66000000" Margin="0,-32,0,0">
+            <Grid Background="#FF191F22" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0" Height="352">
+                <Grid.Effect>
+                    <DropShadowEffect ShadowDepth="-4" BlurRadius="10" Color="#FF171717"/>
+                </Grid.Effect>
+                <StackPanel>
+                    <Button pu:ButtonHelper.ButtonStyle="Link" pu:ButtonHelper.Icon="" Margin="583,0,0,0" Foreground="#FF6B838E" Click="Button_Click" Height="30"/>
+                    <ScrollViewer pu:ScrollViewerHelper.ScrollBarCornerRadius="4" pu:ScrollViewerHelper.ScrollBarThickness="7" Height="308" Margin="10,0,10,10" Width="600">
+                        <TextBlock x:Name="logTextBox" FontSize="13" Width="580" Foreground="#FFBDE6FB" Background="Transparent" TextWrapping="Wrap"/>
+                    </ScrollViewer>
+                </StackPanel>
+            </Grid>
+        </Grid>
 
         <Grid Visibility="Collapsed" x:Name="panErrorMsg" Background="#66000000" Margin="0,-40,0,0">
             <Grid Background="#FF191F22" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0" Width="375">
@@ -297,10 +384,13 @@
                 </StackPanel>
             </Grid>
         </Grid>
+
         <tb:TaskbarIcon
             x:Name="TaskBar"
             IconSource="icon.ico"
-            ToolTipText="N2N Desktop Launcher - 未启用">
+            ToolTipText="N2N Desktop Launcher - 未启用"
+            LeftClickCommand="{StaticResource MessageCommand}"
+            LeftClickCommandParameter="Single left mouse button click.">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu pu:ContextMenuHelper.CheckableCheckboxStyle="{StaticResource TaskbarCheckStyle}" Width="170" BorderThickness="0" pu:ContextMenuHelper.ItemHeight="25" pu:ContextMenuHelper.CornerRadius="2" Background="#FF191F22" pu:ContextMenuHelper.HoverBackground="#FF0F1213" pu:ContextMenuHelper.ShadowColor="#FF171717" Foreground="#FFBDE6FB" pu:ContextMenuHelper.HoverForeground="#FFBDE6FB">
                     <MenuItem x:Name="taskBarRun" Header="启用" IsCheckable="True" Click="TaskBarRun_Click"/>

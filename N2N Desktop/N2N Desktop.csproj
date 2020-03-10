@@ -33,6 +33,12 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>SS_Tool_Box.Program</StartupObject>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>icon_128.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Hardcodet.Wpf.TaskbarNotification, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Hardcodet.NotifyIcon.Wpf.1.0.8\lib\net40\Hardcodet.Wpf.TaskbarNotification.dll</HintPath>
@@ -62,7 +68,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Program.cs" />
     <Compile Include="SaveLoader.cs" />
+    <Compile Include="ShowMessageCommand.cs" />
     <Compile Include="SSUserClass.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -102,12 +110,24 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="tp.jpg" />
     <Resource Include="SS.png" />
     <Resource Include="icon.ico" />
     <Resource Include="icon.png" />
     <Resource Include="icon_128.ico" />
     <Resource Include="ck.png" />
-    <Content Include="N2NStart.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resource\Hardcodet.Wpf.TaskbarNotification.dll" />
+    <EmbeddedResource Include="Resource\Microsoft.Windows.Shell.dll" />
+    <EmbeddedResource Include="Resource\Panuon.UI.Silver.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="AfterResolveReferences">
+    <ItemGroup>
+      <EmbeddedResource Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.dll'">
+        <LogicalName>%(ReferenceCopyLocalPaths.DestinationSubDirectory)%(ReferenceCopyLocalPaths.Filename)%(ReferenceCopyLocalPaths.Extension)</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+  </Target>
 </Project>

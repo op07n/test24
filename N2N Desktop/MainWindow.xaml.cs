@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading;
 using System.Windows;
@@ -32,60 +33,48 @@ namespace N2N_Desktop
         bool isRun = false;
         List<SaveLoader.N2NConfig> configs = new List<SaveLoader.N2NConfig>();
         SaveLoader.N2NConfig nowUsed;
+        public static MainWindow mainw;
 
         public MainWindow()
         {
             InitializeComponent();
+            mainw = this;
 
             //判断tap-windows是否安装
-            bool get = true;
-            if (!Directory.Exists("Cache"))
+            try
             {
-                Directory.CreateDirectory("Cache");
-                get = false;
-            }
-            else
-            {
-                if(!File.Exists("Cache\\get.sscache"))
+                if (!SSUserClass.Reg.IsRegeditItemExist(Registry.LocalMachine, "SOFTWARE", "TAP-Windows"))
                 {
-                    get = false;
+                    errMode = 1;
+                    panErrorMsg.Visibility = Visibility.Visible;
+                    errorTitle.Text = "缺少组件";
+                    errorSays.Text = "未安装Tap运行环境.点击确认将尝试打开安装程序，请谨慎杀毒软件查杀！";
                 }
-            }
-            if (!get)
-            {
-                try
+                else
                 {
-                    if (!SSUserClass.Reg.IsRegeditItemExist(Registry.LocalMachine, "SOFTWARE", "TAP-Windows"))
+                    if (!Directory.Exists("Cache"))
                     {
-                        errMode = 1;
-                        panErrorMsg.Visibility = Visibility.Visible;
-                        errorTitle.Text = "缺少组件";
-                        errorSays.Text = "未安装Tap运行环境.点击确认将尝试打开安装程序，请谨慎杀毒软件查杀！";
+                        Directory.CreateDirectory("Cache");
                     }
-                    else
+                    using (StreamWriter sw = File.AppendText("Cache\\get.sscache"))
                     {
-                        if (!Directory.Exists("Cache"))
-                        {
-                            Directory.CreateDirectory("Cache");
-                        }
-                        using (StreamWriter sw = File.AppendText("Cache\\get.sscache"))
-                        {
-                            sw.WriteLine("GET");
-                        }
-                        #if DEBUG
-                        errMode = 0;
-                        panErrorMsg.Visibility = Visibility.Visible;
-                        errorTitle.Text = "已安装Tap";
-                        errorSays.Text = "在Debug模式告诉我我已经安装了，这个检测流程没问题= =";
-                        #endif
+                        sw.WriteLine("GET");
                     }
+                    #if DEBUG
+                    errMode = 0;
+                    panErrorMsg.Visibility = Visibility.Visible;
+                    errorTitle.Text = "已安装Tap";
+                    errorSays.Text = "在Debug模式告诉我我已经安装了，这个检测流程没问题= =";
+                    #endif
                 }
-                catch
-                {
-                    //申请管理员权限
-                    Thread thread = new Thread(GetAdms);
-                    thread.Start();
-                }
+            }
+            catch
+            {
+                //申请管理员权限
+                #if !DEBUG
+                Thread thread = new Thread(GetAdms);
+                thread.Start();
+                #endif
             }
             //检测文件完整性
             if (Directory.Exists("System"))
@@ -118,7 +107,7 @@ namespace N2N_Desktop
             {
                 panErrorMsg.Visibility = Visibility.Visible;
                 errorTitle.Text = "申请权限";
-                errorSays.Text = "我们将提高权限用于检查是否安装必要组件，如果点击取消将跳过环节。";
+                errorSays.Text = "我们将提高权限用于检查是否安装必要组件以及启动核心。";
             });
         }
 
@@ -139,10 +128,7 @@ namespace N2N_Desktop
             }
             else if (a.IsSelected)
             {
-                errMode = 5;
-                panErrorMsg.Visibility = Visibility.Visible;
-                errorTitle.Text = "申请权限";
-                errorSays.Text = "我们将提高权限用于启动连接。";
+                RunFun();
                 isOpen.Text = "正在启动";
                 ProgressBarHelper.SetAnimateTo(openPer, 50);
             }
@@ -638,33 +624,38 @@ namespace N2N_Desktop
                         }
                     }
                     break;
-                case 5:
-                    {
-                        RunFun();
-                    }
-                    break;
             }
         }
 
+        Process process = new Process();
+
         private void RunFun()
         {
+            ButtonHelper.SetIsWaiting(Run, true);
             //基本数据
-            string IPADRESS = nowUsed.isDHCP ? "dhcp:" + nowUsed.iP : nowUsed.iP;       //自定义本机IP,DHCP请在DHCP服务器IP前加："dhcp:"
-            string DHCP = nowUsed.isDHCP ? "-r" : "";                                  //如果为DHCP请将此项改为："-r",不是DHCP请留空：""。
-            string GROUPNAME = nowUsed.teamName;                                    //填写组名
+            string IPADRESS = nowUsed.isDHCP ? "dhcp:" + nowUsed.iP : nowUsed.iP;   //自定义本机IP,DHCP请在DHCP服务器IP前加："dhcp:"
+            string DHCP = nowUsed.isDHCP ? "-r" : "";                               //如果为DHCP请将此项改为："-r",不是DHCP请留空：""。
+            string GROUPNAME ="\"" + nowUsed.teamName + "\"";                       //填写组名
             string PASSWORD = nowUsed.teamPassword;                                 //填写密码
             string SUPERNODEIP = nowUsed.severIP;                                   //此项为SuperNode服务器IP(公网)
             string SUPERNODEPORT = nowUsed.severPost.ToString();                    //此项为SuperNode服务器端口
-            string OTHERARG = nowUsed.iPAdditional;                                 //其他参数
-                                                                                    //准备配置文件
+            string OTHERARG = " " + nowUsed.iPAdditional;                           //其他参数
+            string APPADDRESS = Directory.GetCurrentDirectory();                    //程序所在目录
+            //准备配置文件
             string edgearg = DHCP + " -a " + IPADRESS + " -c " + GROUPNAME + " -k " + PASSWORD + " -l " + SUPERNODEIP + ":" + SUPERNODEPORT + OTHERARG;
             ProcessStartInfo psi = new ProcessStartInfo();
             psi.FileName = "System\\edge.exe";
             psi.Verb = "runas";
             psi.Arguments = edgearg;
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
+            psi.WindowStyle = ProcessWindowStyle.Minimized;
+            psi.RedirectStandardOutput = true;
+            process.StartInfo = psi;
+            process.Start();
+            //process.
             try
             {
-                Process.Start(psi);
                 //监控进程
                 this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
                 {
@@ -687,11 +678,20 @@ namespace N2N_Desktop
 
         private void Seeing()
         {
+            if (!Directory.Exists("Cache"))
+            {
+                Directory.CreateDirectory("Cache");
+            }
+            if (File.Exists("Cache\\logs.log"))
+            {
+                File.Delete("Cache\\logs.log");
+            }
             this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
             {
                 NamePorc.Text = "加载中";
                 IDPorc.Text = "加载中";
                 UsePorc.Text = "加载中";
+                Ping.Text = "加载中";
             });
             Process p = SSUserClass.Proc.GetProc("edge");
             PerformanceCounter pf1 = new PerformanceCounter("Process", "Working Set - Private", p.ProcessName);
@@ -707,20 +707,91 @@ namespace N2N_Desktop
                 isOpen.Text = "启动完成";
                 TaskBar.ToolTipText = "N2N Desktop Launcher - 正在运行";
                 taskBarRun.IsChecked = true;
+                logTextBox.Text = ">[ 进程守护 ] 进程监控已正常运转——\n";
+                PingReply reply = SSUserClass.Net.GetPing(nowUsed.severIP, "abcd");
+                ButtonHelper.SetIsWaiting(Run, false);
+                if (reply.Status == IPStatus.Success)
+                {
+                    Ping.Text = (reply.RoundtripTime).ToString() + "ms";
+                }
             });
+            int failepingTimes = 0;
+            int passtime = 0;
             while (SSUserClass.Proc.HasProc("edge"))
             {
-                ////刷新进程信息
-                //p = SSUserClass.Proc.GetProc("edge");
-                //pf1 = new PerformanceCounter("Process", "Working Set - Private", p.ProcessName);
-                //this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
-                //{
-                //    NamePorc.Text = p.ProcessName;
-                //    IDPorc.Text = p.Id + "/" + p.SessionId;
-                //    UsePorc.Text = pf1.NextValue() / 1024 + "KB";
-                //    ProgressBarHelper.SetAnimateTo(openPer, 100);
-                //});
-                Thread.Sleep(10);
+                String nexline = process.StandardOutput.ReadLine();
+                if (!String.IsNullOrWhiteSpace(nexline))
+                {
+                    this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
+                    {
+                        using (StreamWriter sw = File.AppendText("Cache\\logs.log"))
+                        {
+                            sw.WriteLine(nexline);
+                        }
+                        if (nexline.IndexOf("WARNING") > 0)
+                        {
+                            logTextBox.Text += nexline + "\n";
+                            logTextBox.Text += ">[ 进程守护 ] 发现疑似报错！\n";
+                        }
+                        else if(nexline.IndexOf("ERROR") > 0)
+                        {
+                            logTextBox.Text += nexline + "\n";
+                            logTextBox.Text += ">[ 进程守护 ] 发现严重错误！\n";
+                            panErrorMsg.Visibility = Visibility.Visible;
+                            errMode = 0;
+                            errorTitle.Text = "错误";
+                            errorSays.Text = "发现了错误：" + nexline;
+                            SSUserClass.Proc.KillProc(SSUserClass.Proc.GetProc("edge"));
+                        }
+                        else
+                        {
+                            logTextBox.Text += nexline + "\n";
+                        }
+                    });
+                }
+                if (passtime >= 30000)
+                {
+                    passtime = 0;
+                }
+                if (passtime % 2000 == 0)
+                {
+                    //刷新进程信息
+                    try
+                    {
+                        p = SSUserClass.Proc.GetProc("edge");
+                        pf1 = new PerformanceCounter("Process", "Working Set - Private", p.ProcessName);
+                        this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
+                        {
+                            NamePorc.Text = p.ProcessName;
+                            IDPorc.Text = p.Id + "/" + p.SessionId;
+                            UsePorc.Text = pf1.NextValue() / 1024 + "KB";
+                            ProgressBarHelper.SetAnimateTo(openPer, 100);
+                        });
+                    }
+                    catch { }
+                    //刷新Ping
+                    PingReply reply = SSUserClass.Net.GetPing(nowUsed.severIP, "abcd");
+                    if (reply.Status == IPStatus.Success)
+                    {
+                        failepingTimes = 0;
+                        this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
+                        {
+                            Ping.Text = (reply.RoundtripTime).ToString() + "ms";
+                        });
+                    }
+                    else
+                    {
+                        failepingTimes++;
+                        if (failepingTimes >= 5)
+                        {
+                            //判定掉线重启
+                            SSUserClass.Proc.KillProc(SSUserClass.Proc.GetProc("edge"));
+                            RunFun();
+                        }
+                    }
+                }
+                passtime += 20;
+                Thread.Sleep(20);
             }
             this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
             {
@@ -742,24 +813,7 @@ namespace N2N_Desktop
             {
                 case 2:
                     {
-                        //检测文件完整性
-                        if (Directory.Exists("System"))
-                        {
-                            if (!File.Exists("System\\edge.exe"))
-                            {
-                                errMode = 3;
-                                panErrorMsg.Visibility = Visibility.Visible;
-                                errorTitle.Text = "缺少组件";
-                                errorSays.Text = "未找到运行核心edge.exe，请确认下载的程序包完整性……";
-                            }
-                        }
-                        else
-                        {
-                            errMode = 3;
-                            panErrorMsg.Visibility = Visibility.Visible;
-                            errorTitle.Text = "缺少组件";
-                            errorSays.Text = "未找到运行核心文件夹，请确认下载的程序包完整性……";
-                        }
+                        Application.Current.Shutdown();
                     }
                     break;
                 case 3:
@@ -867,6 +921,50 @@ namespace N2N_Desktop
         {
             b.IsSelected = true;
             WindowState = WindowState.Normal;
+        }
+
+        private void WindowX_StateChanged(object sender, EventArgs e)
+        {
+            if (this.WindowState == WindowState.Minimized)
+            {
+                this.Visibility = Visibility.Hidden;
+            }
+            else if (this.WindowState == WindowState.Normal)
+            {
+                this.Topmost = true;
+                this.Topmost = false;
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            panLogUI.Visibility = Visibility.Collapsed;
+        }
+
+        private void Run_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            panLogUI.Visibility = Visibility.Visible;
+        }
+
+        private void About_Click(object sender, RoutedEventArgs e)
+        {
+            Thread thread = new Thread(ScroolDown);
+            thread.Start();
+        }
+
+        private void ScroolDown()
+        {
+            SSUserClass.Anim.ScrollRollTo(this, AboutRoll, 360, 1, true);
+        }
+
+        private void WindowX_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            SSUserClass.Proc.KillProc(SSUserClass.Proc.GetProc("edge"));
+        }
+
+        private void Ck_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("https://purr.me0w.best/");
         }
     }
 }
